@@ -20,10 +20,10 @@ First, clone the repository locally:
 git clone https://github.com/ChengliZhu777/RTLST.git
 ```
 
-Then, install Python3.7, Pytorch 1.7.1, and Torchvision 0.8.2, and other requirements:
+Then, install Python3.7.13, Pytorch 1.7.1, and Torchvision 0.8.2, and other requirements:
 ```shell
 conda create --name RTLSTD python==3.7.13
-source activate RTLSTD
+conda activate RTLSTD
 conda install pytorch==1.7.1 torchvision==0.8.2 torchaudio==0.7.2 cudatoolkit=10.1 -c pytorch
 ```
 
