@@ -33,3 +33,11 @@ def get_options(hyp_path='hyp/hyp.base.yaml',
 
     return parser.parse_args()
 
+
+def get_latest_run(search_dir='.'):
+    last_ckpt_list = glob.glob(f'{search_dir}/**/last*.pt', recursive=True)
+    if last_ckpt_list:
+        return max(last_ckpt_list, key=os.path.getctime)
+    else:
+        raise FileNotFoundError("Error: don't find checkpoint file for resuming train.")
+        
