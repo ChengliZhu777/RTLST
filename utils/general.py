@@ -40,4 +40,56 @@ def get_latest_run(search_dir='.'):
         return max(last_ckpt_list, key=os.path.getctime)
     else:
         raise FileNotFoundError("Error: don't find checkpoint file for resuming train.")
-        
+
+
+def increment_path(path, exist_ok=True, separator='-'):
+    path = Path(path)
+
+    if (path.exists() and exist_ok) or (not path.exists()):
+        return path.absolute()
+    else:
+        # search similar paths
+        paths = glob.glob(f'{path.parent}/{path.stem.split(separator)[0]}{separator}*')
+
+        match_pattern = rf"%s{separator}(\d+)" % path.stem.split(separator)[0]
+        matches = [re.search(match_pattern, p) for p in paths]
+        i = [int(m.groups()[0]) for m in matches if m]
+
+        return f"{path.parent}/{path.stem.split(separator)[0]}{separator}{max(i) + 1 if i else 2}"
+
+
+def check_filepath(path):
+    if path is None or path == '':
+        raise ValueError('Error: empty filename, specify exact file path.')
+    elif Path(path).is_file():
+        return path
+    else:
+        files = glob.glob('./**/' + path, recursive=True)
+        assert len(files) >= 1, f"Error: file '{path}' not found."
+        assert len(files) == 1, f"Error: Multiple files math '{path}', specify exact path: {files}."
+
+
+def colorstr(*inputs):
+    *args, string = inputs if len(inputs) > 1 else ('blue', 'bold', inputs[0])  # color arguments, string
+    colors = {'black': '\033[30m',  # basic colors
+              'red': '\033[31m',
+              'green': '\033[32m',
+              'yellow': '\033[33m',
+              'blue': '\033[34m',
+              'magenta': '\033[35m',
+              'cyan': '\033[36m',
+              'white': '\033[37m',
+              'bright_black': '\033[90m',  # bright colors
+              'bright_red': '\033[91m',
+              'bright_green': '\033[92m',
+              'bright_yellow': '\033[93m',
+              'bright_blue': '\033[94m',
+              'bright_magenta': '\033[95m',
+              'bright_cyan': '\033[96m',
+              'bright_white': '\033[97m',
+              'end': '\033[0m',  # misc
+              'bold': '\033[1m',
+              'underline': '\033[4m'}
+    return ''.join(colors[x] for x in args) + f'{string}' + colors['end']
+
+
