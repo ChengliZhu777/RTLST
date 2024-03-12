@@ -12,6 +12,10 @@ from utils.torch_utils import select_torch_device
 logger = logging.getLogger(__name__)
 
 
+def train(opts, evolve_paras=None):
+    pass
+
+
 if __name__ == '__main__':
     set_logging(-1)
   
