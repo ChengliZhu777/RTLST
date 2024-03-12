@@ -21,4 +21,4 @@ if __name__ == '__main__':
     else:
         train_options.save_dir = increment_path(Path(train_options.project) / train_options.name,
                                                 exist_ok=train_options.exist_ok)
-
+        train_options.hyp = check_filepath(train_options.hyp)
