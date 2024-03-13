@@ -1,0 +1,5 @@
+epochs: [600]
+batch_size: [4]
+learning_rate: [0.0001]
+patch_size: [128]
+patch_thresh: [0.25]
