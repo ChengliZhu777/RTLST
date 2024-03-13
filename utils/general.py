@@ -1,5 +1,11 @@
+import os
+import re
+import glob
+import yaml
 import logging
 import argparse
+
+from pathlib import Path
 
 
 def set_logging(rank=-1):
@@ -11,17 +17,19 @@ def set_logging(rank=-1):
                         level=logging.INFO if rank in [-1, 0] else logging.WARN)
 
 
-def get_options(hyp_path='hyp/hyp.base.yaml',
+def get_options(hyp_path='hyp/rtlstd.base.yaml',
                 data_path='data/rtls.yaml',
                 model_cfg='models/cfg/rtlstd.yaml',
+                evolve_hyp_path='hyp/rtlstd.evolve.yaml',
                 weights=None, resume=False,
                 evolve=False, visible=False,
-                exist_ok=False, project='RTLSTD-Runs', name='Train'):
+                exist_ok=False, project='runs', name='train'):
 
     parser = argparse.ArgumentParser(description='RTLSTD Train/Test Options')
     parser.add_argument('--hyp', type=str, default=hyp_path, help='Required hyper-parameters, i.e, patch-size.')
     parser.add_argument('--data', type=str, default=data_path, help='Train/Test dataset paths.')
     parser.add_argument('--model-cfg', type=str, default=model_cfg, help='RTLSTD architecture.')
+    parser.add_argument('--evolve-hyp', type=str, default=evolve_hyp_path, help='Evolved hyper-parameters.')
     parser.add_argument('--weights', type=str, default=weights, help='Trained weight path.')
     parser.add_argument('--resume', action='store_true', default=resume, help='Resume most recent training results.')
     parser.add_argument('--evolve', action='store_true', default=evolve, help='Evolve specified hyper-parameters.')
@@ -93,3 +101,9 @@ def colorstr(*inputs):
     return ''.join(colors[x] for x in args) + f'{string}' + colors['end']
 
 
+def load_file(file_path, prefix=''):
+    if isinstance(file_path, str):
+        with open(file_path) as f:
+            return yaml.load(f, yaml.SafeLoader)
+    else:
+        raise AttributeError(f"Error: '--{prefix}' must be valid data filepath.")
