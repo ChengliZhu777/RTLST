@@ -1,4 +1,5 @@
 import yaml
+import wandb
 import logging
 import argparse
 
@@ -33,3 +34,26 @@ if __name__ == '__main__':
         train_options.save_dir = increment_path(Path(train_options.project) / train_options.name,
                                                 exist_ok=train_options.exist_ok)
         train_options.hyp = check_filepath(train_options.hyp)
+    
+    logger.info(colorstr('Options: ') + str(train_options))
+
+    if not train_options.evolve:
+        train(train_options)
+    else:
+        wandb.login()
+        sweep_config = {'method': 'grid'}
+
+        metric = {'name': 'val_pos', 'goal': 'maximize'}
+        sweep_config['metric'] = metric
+
+        evolved_hypers = load_file(train_options.evolve_hyp, 'evolve-hyp')
+
+        parameters_dict = {}
+        for hyp_name in evolved_hypers.keys():
+            parameters_dict[hyp_name] = {'values': evolved_hypers[hyp_name]}
+
+        sweep_config['parameters'] = parameters_dict
+        sweep_id = wandb.sweep(sweep_config, project=Path(train_options.save_dir).name)
+
+        wandb.agent(sweep_id, wandb_sweep)
+        
