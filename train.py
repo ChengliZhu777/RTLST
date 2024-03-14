@@ -23,7 +23,6 @@ def wandb_sweep():
 
         evolved_hypers = {}
         for _hyp_name in evolved_hyper_list.keys():
-            print(_hyp_name)
             evolved_hypers[_hyp_name] = cur_sweep_config[_hyp_name]
 
         train(train_options, evolved_hypers)
