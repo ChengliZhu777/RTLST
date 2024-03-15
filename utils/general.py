@@ -74,7 +74,8 @@ def check_filepath(path):
     else:
         files = glob.glob('./**/' + path, recursive=True)
         assert len(files) >= 1, f"Error: file '{path}' not found."
-        assert len(files) == 1, f"Error: Multiple files math '{path}', specify exact path: {files}."
+        assert len(files) == 1, f"Error: Multiple files match '{path}', specify exact filepath in: {files}."
+        return files[0]
 
 
 def colorstr(*inputs):
@@ -101,9 +102,11 @@ def colorstr(*inputs):
     return ''.join(colors[x] for x in args) + f'{string}' + colors['end']
 
 
-def load_file(file_path, prefix=''):
-    if isinstance(file_path, str):
+def load_file(file_path):
+
+    try:
         with open(file_path) as f:
             return yaml.load(f, yaml.SafeLoader)
-    else:
-        raise AttributeError(f"Error: '--{prefix}' must be valid data filepath.")
+    except Exception as e:
+        raise Exception(f'Error: fail to load data from {file_path}. \n {e}')
+        
