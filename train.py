@@ -13,20 +13,22 @@ from utils.torch_utils import select_torch_device
 logger = logging.getLogger(__name__)
 
 
-def train(opts, evolve_paras=None):
-    pass
+def train(opts, evolved_hypers=None):
 
+    logger.info(colorstr('Options: ') + str(opts))
 
-def wandb_sweep():
-    with wandb.init(config=None):
-        cur_sweep_config = wandb.config
+    hypers, model_cfg = load_file(train_options.hyp), load_file(train_options.model_cfg)
 
-        evolved_hypers = {}
-        for _hyp_name in evolved_hyper_list.keys():
-            evolved_hypers[_hyp_name] = cur_sweep_config[_hyp_name]
+    if evolved_hypers is not None:
+        for para_name in evolved_hypers.keys():
+            if para_name in ['patch_size']:
+                model_cfg['model'][para_name] = evolved_hypers[para_name]
+            else:
+                hypers[para_name] = evolved_hypers[para_name]
 
-        train(train_options, evolved_hypers)
-        
+    logger.info(colorstr('hyper-parameters: ') + ', '.join(f'{k}={v}' for k, v in hypers.items()))
+    device = select_torch_device(hypers['device'], batch_size=['batch_size'], prefix=colorstr('Device: '))
+
 
 if __name__ == '__main__':
     set_logging(-1)
@@ -42,11 +44,11 @@ if __name__ == '__main__':
         train_options.weights, train_options.hyp, train_options.resume = \
             train_ckpt, str(Path(train_ckpt).parent.parent / 'hyp.yaml'), True
     else:
+        train_options.hyp = check_filepath(train_options.hyp)
+        train_options.model_cfg = check_filepath(train_options.model_cfg)
+        train_options.evolve_hyp = check_filepath(train_options.evolve_hyp)
         train_options.save_dir = increment_path(Path(train_options.project) / train_options.name,
                                                 exist_ok=train_options.exist_ok)
-        train_options.hyp = check_filepath(train_options.hyp)
-
-    logger.info(colorstr('Options: ') + str(train_options))
 
     evolved_hyper_list = None
     if not train_options.evolve:
@@ -58,7 +60,7 @@ if __name__ == '__main__':
         metric = {'name': 'val_pos', 'goal': 'maximize'}
         sweep_config['metric'] = metric
 
-        evolved_hyper_list = load_file(train_options.evolve_hyp, 'evolve-hyp')
+        evolved_hyper_list = load_file(train_options.evolve_hyp)
 
         parameters_dict = {}
         for hyp_name in evolved_hyper_list.keys():
