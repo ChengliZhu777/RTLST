@@ -1,1 +1,7 @@
+epochs: 600
+workers: 4
+batch_size: 4
+learning_rate: 0.0001
+patch_thresh: 0.25
 
+device: '0'
