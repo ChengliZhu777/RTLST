@@ -16,3 +16,15 @@ def select_torch_device(device='', batch_size=None, prefix=''):
     else:
         raise ValueError("Error: torch device must be specified, e.g, 'cpu', '0', or '0, 1, 2'.")
       
+
+def init_torch_seeds(seed=0):
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    cudnn.benchmark, cudnn.deterministic = False, True  # using default conv, more reproducible
+
+
+def init_seeds(seed=0):
+    random.seed(seed)
+    np.random.seed(seed)
+    init_torch_seeds(seed)
+    
