@@ -53,7 +53,31 @@ def train(opts, evolved_hypers=None):
         yaml.dump(hypers, f1, sort_keys=False)
 
     train_data_paths, valid_data_paths = data_list['train'], data_list['valid']
-    train_long_size, train_short_size = [check_image_size(size, patch_size) for size in hypers['image_size']]
+    image_long_size, image_short_size = [check_image_size(size, patch_size) for size in hypers['image_size']]
+
+    train_dataloader, train_dataset = create_dataloader(paths=train_data_paths,
+                                                        hypers=hypers,
+                                                        long_size=image_long_size,
+                                                        short_size=image_short_size,
+                                                        patch_size=patch_size,
+                                                        batch_size=batch_size,
+                                                        is_train=True,
+                                                        is_augment=True,
+                                                        is_recognize=is_recognize,
+                                                        read_type=read_type,
+                                                        prefix=colorstr('train-dataset'))
+
+    valid_dataloader, valid_dataset = create_dataloader(paths=valid_data_paths,
+                                                        hypers=hypers,
+                                                        long_size=image_long_size,
+                                                        short_size=image_short_size,
+                                                        patch_size=patch_size,
+                                                        batch_size=batch_size,
+                                                        is_train=False,
+                                                        is_augment=False,
+                                                        is_recognize=is_recognize,
+                                                        read_type=read_type,
+                                                        prefix=colorstr('valid-dataset'))
 
 
 if __name__ == '__main__':
