@@ -1,0 +1,16 @@
+import string
+
+
+def get_chars(latin_type, eos='EOS', padding='PAD', unknown='UNK'):
+    if latin_type == 'lowercase':
+        chars = list(string.digits + string.ascii_lowercase)
+    elif latin_type == 'all-case':
+        chars = list(string.digits + string.ascii_letters)
+    elif latin_type == 'all-cases-symbols':
+        chars = list(string.printable[:-6])
+    else:
+        raise KeyError('latin-type must be as follow: \n'
+                       '1) lowercase'
+                       '2) all-cases'
+                       '3) all-cases-symbols')
+          
