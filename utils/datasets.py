@@ -22,6 +22,24 @@ class LoadImageAndLabels(Dataset):
         self.max_label_num, self.max_label_len = 200, 32
         self.chars, self.char2id, self.id2char = get_chars('lowercase')
 
+        self.image_files, self.label_files, self.shapes = [], [], tuple()
+        self.bboxes, self.words, self.gt_words, self.word_mask = [], [], [], []
+
+        for dataset_format, dataset_path in paths.items():
+            try:
+                dataset_path = Path(dataset_path)
+                if dataset_path.is_dir():
+                    image_paths = [img_path for img_path in glob.glob(str(dataset_path) + '/*.*')
+                                   if img_path.endswith(image_formats)]
+                elif dataset_path.is_file():
+                    parent = str(dataset_path.parent.absolute()) + os.sep
+                    with open(dataset_path, 'r') as mf:
+                        image_paths = [img_path.replace('./', parent) if img_path.startswith('./') else img_path
+                                       for img_path in mf.read().strip().splitlines()
+                                       if img_path.split('.')[-1].lower() in image_formats]
+                else:
+                    raise Exception(f'({prefix}) Error: {dataset_path} dose not exist.')
+
 
 def create_dataloader(paths, hypers, long_size, short_size, patch_size, batch_size,
                       is_train=False, is_augment=False, is_recognize=False, is_visible=False,
