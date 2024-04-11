@@ -13,4 +13,7 @@ def get_chars(latin_type, eos='EOS', padding='PAD', unknown='UNK'):
                        '1) lowercase'
                        '2) all-cases'
                        '3) all-cases-symbols')
-          
+
+    chars.extend([eos, padding, unknown])
+    char2id, id2char = dict(zip(chars, range(len(chars)))), dict(zip(range(len(chars)), chars))
+    return chars, char2id, id2char
