@@ -39,7 +39,24 @@ class LoadImageAndLabels(Dataset):
                                        if img_path.split('.')[-1].lower() in image_formats]
                 else:
                     raise Exception(f'({prefix}) Error: {dataset_path} dose not exist.')
+                    
+                image_paths = sorted([image_path.replace('/', os.sep) for image_path in image_paths])
+                assert len(image_paths), f'({prefix}) Error: no images found at dataset {dataset_path}.'
+                label_paths = image2label_paths(image_paths, dataset_format)
 
+                cache_path = Path(dataset_path)
+                cache_path = (cache_path if cache_path.is_file()
+                              else Path(label_paths[0]).parent.parent.parent).with_suffix('.cache')
+
+                if cache_path.exists():
+                    cache = torch.load(cache_path)
+                    num_found, num_miss, num_empty, num_duplicate = cache.pop('results')
+                    desc = f"({prefix}) Scanning {dataset_format} at '{cache_path.parent / cache_path.stem}' ... " \
+                           f"{num_found} found, {num_miss} missing, {num_empty} empty, {num_duplicate} corrupted."
+                    tqdm(None, desc=desc, total=len(image_paths), initial=len(image_paths))
+                    assert num_found > 0, f'({prefix}) Error: No labels in {cache_path}, can not train without labels.'
+                else:
+                    pass
 
 def create_dataloader(paths, hypers, long_size, short_size, patch_size, batch_size,
                       is_train=False, is_augment=False, is_recognize=False, is_visible=False,
