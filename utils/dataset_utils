@@ -17,3 +17,13 @@ def get_chars(latin_type, eos='EOS', padding='PAD', unknown='UNK'):
     chars.extend([eos, padding, unknown])
     char2id, id2char = dict(zip(chars, range(len(chars)))), dict(zip(range(len(chars)), chars))
     return chars, char2id, id2char
+
+
+def image2label_paths(image_paths, dataset_format='ICDAR2015'):
+    if dataset_format == 'ICDAR2015':
+        sa, sb = os.sep + 'images' + os.sep, os.sep + 'labels' + os.sep
+    else:
+        raise KeyError(f'Error: unsupported dataset format {dataset_format}.')
+
+    return ['txt'.join(path.replace(sa, sb, 1).rsplit(path.split('.')[-1], 1)) for path in image_paths]
+
