@@ -19,8 +19,8 @@ def get_chars(latin_type, eos='EOS', padding='PAD', unknown='UNK'):
     return chars, char2id, id2char
 
 
-def image2label_paths(image_paths, dataset_format='ICDAR2015'):
-    if dataset_format == 'ICDAR2015':
+def image2label_paths(image_paths, dataset_format='RTLSTD'):
+    if dataset_format in [RTLSTD, 'ICDAR2015']:
         sa, sb = os.sep + 'images' + os.sep, os.sep + 'labels' + os.sep
     else:
         raise KeyError(f'Error: unsupported dataset format {dataset_format}.')
