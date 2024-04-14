@@ -63,7 +63,29 @@ class LoadImageAndLabels(Dataset):
                     tqdm(None, desc=desc, total=len(image_paths), initial=len(image_paths))
                     assert num_found > 0, f'({prefix}) Error: No labels in {cache_path}, can not train without labels.'
                 else:
+                    cache = self.cache_dataset(image_paths, label_paths, cache_path, dataset_format, prefix)
+                    cache.pop('results')
+
+    def cache_dataset(self, image_paths, label_paths, cache_path,
+                      dataset_format='RTLSTD', prefix='Dataset'):
+        labels = {}
+        num_found, num_miss, num_empty, num_corrupted = 0, 0, 0, 0
+        pbar = tqdm(zip(image_paths, label_paths), desc=f'({prefix}) Scanning {dataset_format}', total=len(image_paths))
+
+        for image_path, label_path in pbar:
+            try:
+                image = Image.open(image_path)
+                image.verify()
+                image_size = image.size  # width, height
+                try:
+                    image_exif = image._getexif().items()
+                    image_size = get_exif_size(image_size, image_exif)
+                except AttributeError:
                     pass
+
+                assert max(image_size) > 32, f'({prefix}) Error: image size {image_size} < 32 pixels.'
+                assert image.format.lower() in image_formats, f'({prefix}) Error: invalid image format {image.format}.'
+
 
 def create_dataloader(paths, hypers, long_size, short_size, patch_size, batch_size,
                       is_train=False, is_augment=False, is_recognize=False, is_visible=False,
