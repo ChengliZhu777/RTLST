@@ -27,3 +27,12 @@ def image2label_paths(image_paths, dataset_format='RTLSTD'):
 
     return ['txt'.join(path.replace(sa, sb, 1).rsplit(path.split('.')[-1], 1)) for path in image_paths]
 
+
+def get_exif_size(image_size, image_exif):
+    image_exif = {ExifTags.TAGS[k]: v for k, v in image_exif if k in ExifTags.TAGS}
+    orientation = image_exif.get('Orientation', None)
+    if orientation == 6 or orientation == 8:
+        return image_size[1], image_size[0]
+
+    return image_size
+
