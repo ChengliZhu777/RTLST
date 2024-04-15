@@ -106,6 +106,46 @@ class LoadImageAndLabels(Dataset):
             else:
                 lines = [line.strip().split(',') for line in mf.readlines()]
 
+        for line in lines:
+            if dataset_format in ['RTLSTD', 'ICDAR2015']:
+                bbox = np.array(line[:8], dtype=int) / ([image_size[0] * 1.0, image_size[1] * 1.0] * 4)
+                word = ','.join([_.replace('\r', '').replace('\n', '') for _ in line[8:]])
+            else:
+                bbox, word = [], ''
+
+            bboxes.append(bbox)
+            if len(word) == 3 and word == '###':
+                words.append('###')
+            else:
+                words.append(word)
+
+        bboxes = np.array(bboxes)
+        if bboxes.shape[0] > self.max_label_num:
+            bboxes, words = bboxes[:self.max_label_num], words[:self.max_label_num]
+
+        if dataset_format in ['RTLSTD', 'ICDAR2015']:
+            for i, word in enumerate(words):
+                if word == '###':
+                    continue
+
+                word = word.lower()
+
+                gt_word = np.full((self.max_label_len, ), self.char2id['PAD'], dtype=np.int32)
+                for j, char in enumerate(word):
+                    if j > self.max_label_len - 1:
+                        break
+                    if char in self.char2id:
+                        gt_word[j] = self.char2id[char]
+                    else:
+                        gt_word[j] = self.char2id['UNK']
+
+                eos_index = -1 if len(word) > self.max_label_len - 1 else len(word)
+                gt_word[eos_index] = self.char2id['EOS']
+
+                gt_words[i + 1], word_mask[i + 1] = gt_word, 1
+
+        return bboxes, words, gt_words, word_mask
+
 
 def create_dataloader(paths, hypers, long_size, short_size, patch_size, batch_size,
                       is_train=False, is_augment=False, is_recognize=False, is_visible=False,
