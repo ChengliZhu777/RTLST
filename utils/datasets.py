@@ -86,6 +86,26 @@ class LoadImageAndLabels(Dataset):
                 assert max(image_size) > 32, f'({prefix}) Error: image size {image_size} < 32 pixels.'
                 assert image.format.lower() in image_formats, f'({prefix}) Error: invalid image format {image.format}.'
 
+                gt_words, word_mask = \
+                    np.full((self.max_label_num + 1, self.max_label_len), self.char2id['PAD'], dtype=np.int32), \
+                    np.zeros((self.max_label_num + 1), dtype=np.int8)
+
+                if os.path.exists(label_path):
+                    num_found += 1
+                    bboxes, words, gt_words, word_mask = \
+                        self.load_annotation(label_path, image_size, gt_words, word_mask, dataset_format)
+
+                    if len(bboxes):
+                        pass
+                        
+    def load_annotation(self, label_path, image_size, gt_words, word_mask, dataset_format):
+        bboxes, words = [], []
+        with open(label_path, 'r', encoding='utf-8-sig') as mf:
+            if dataset_format in ['RTLSTD', 'ICDAR2015']:
+                lines = [line.strip().replace('\ufeff', '').split(',') for line in mf.readlines()]
+            else:
+                lines = [line.strip().split(',') for line in mf.readlines()]
+
 
 def create_dataloader(paths, hypers, long_size, short_size, patch_size, batch_size,
                       is_train=False, is_augment=False, is_recognize=False, is_visible=False,
