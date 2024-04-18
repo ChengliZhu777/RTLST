@@ -96,7 +96,45 @@ class LoadImageAndLabels(Dataset):
                         self.load_annotation(label_path, image_size, gt_words, word_mask, dataset_format)
 
                     if len(bboxes):
-                        pass
+                        if dataset_format in ['RTLSTD', 'ICDAR2015']:
+                            assert bboxes.shape[1] == 8, \
+                                f"({prefix}) Error: RTLSTD or ICDAR2015 require format 'x1, y1, x2, y2, x3, y3, x4, y4'."
+
+                        assert (bboxes >= 0).all() and (bboxes[:, 0::2] <= 1.0).all() \
+                               and (bboxes[:, 1::2] <= 1.0).all(), f'({prefix}) Error: label out of image bounds.'
+                        assert np.unique(bboxes, axis=0).shape[0] == bboxes.shape[0], \
+                            f'({prefix}) Error: duplicate labels.'
+
+                        labels[image_path] = [bboxes, words, gt_words, word_mask, image_size]
+                    else:
+                        num_empty += 1
+                        is_empty = True
+                else:
+                    num_miss += 1
+                    is_miss = True
+            except Exception as e:
+                if not is_empty and not is_miss:
+                    num_corrupted += 1
+
+                if is_miss:
+                    logger.info(f'({prefix}) Warning: sample dose not exist {Path(label_path).name}')
+                elif is_empty:
+                    logger.info(f'({prefix}) Warning: sample does not contain text-instances {Path(label_path).name}')
+                else:
+                    logger.info(f'({prefix}) Warning: Ignoring corrupted sample {Path(label_path).name}')
+                logger.info(e)
+
+            pbar.desc = f"({prefix}) Scanning {dataset_format} at '{cache_path.parent/cache_path.stem}'..." \
+                        f"{num_found} found, {num_miss} missing, {num_empty} empty, {num_corrupted} corrupted"
+
+        pbar.close()
+
+        assert num_found > 0, f'({prefix}) Error: No samples found in {cache_path.parent/cache_path.stem}.'
+        labels['hash'] = get_hash(image_paths + label_paths)
+        labels['results'] = num_found, num_miss, num_empty, num_corrupted
+        torch.save(labels, cache_path)
+
+        return labels
                         
     def load_annotation(self, label_path, image_size, gt_words, word_mask, dataset_format):
         bboxes, words = [], []
