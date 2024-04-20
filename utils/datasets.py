@@ -1,13 +1,19 @@
 import glob
+import logging
 
+import numpy as np
+
+from PIL import Image
 from tqdm import tqdm
 from pathlib import Path
 from torch.utils.data import Dataset
 
 from utils.general import colorstr
 from utils.torch_utils import torch_distributed_zero_first
-from utils.dataset_utils import get_chars, image2label_paths
+from utils.dataset_utils import get_chars, image2label_paths, get_exif_size, \
+    get_hash
 
+logger = logging.getLogger(__name__)
 image_formats = ('bmp', 'jpg', 'jpeg', 'png', 'tif', 'tiff', 'dng', 'webp', 'mpo')
 
 
@@ -65,7 +71,21 @@ class LoadImageAndLabels(Dataset):
                 else:
                     cache = self.cache_dataset(image_paths, label_paths, cache_path, dataset_format, prefix)
                     cache.pop('results')
+                    
+                cache.pop('hash')
+                bboxes, words, gt_words, word_mask, image_sizes = zip(*cache.values())
+                self.bboxes.extend(list(bboxes)), self.words.extend(list(words))
+                self.gt_words.extend(list(gt_words)), self.words.extend(list(word_mask))
+                self.image_sizes = self.image_sizes + image_sizes
 
+                image_filepath = list(cache.keys())
+                self.image_files.extend(image_filepath)
+                self.label_files.extend(image2label_paths(image_filepath, dataset_format))
+            except Exception as e:
+                raise Exception(f'({prefix}) Error: fail to load dataset from {dataset_format}.\n'
+                                f'Error detail: {e}')
+            self.image_sizes = np.array(self.image_sizes, dtype=int)
+            
     def cache_dataset(self, image_paths, label_paths, cache_path,
                       dataset_format='RTLSTD', prefix='Dataset'):
         labels = {}
