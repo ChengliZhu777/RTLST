@@ -1,3 +1,4 @@
+import os
 import glob
 import logging
 
@@ -209,10 +210,20 @@ def create_dataloader(paths, hypers, long_size, short_size, patch_size, batch_si
                       is_train=False, is_augment=False, is_recognize=False, is_visible=False,
                       rank=-1, read_type='pil', prefix='Dataset'):
     with torch_distributed_zero_first(rank):
-        dataset = LoadImageAndLabels(paths=paths, hypers=hypers,
-                                     long_size=long_size, short_size=short_size,
-                                     patch_size=patch_size, batch_size=batch_size,
+        dataset = LoadImageAndLabels(paths=paths, hypers=hypers, long_size=long_size,
+                                     short_size=short_size, patch_size=patch_size,
                                      is_train=is_train, is_augment=is_augment,
                                      is_recognize=is_recognize, is_visible=is_visible,
                                      read_type=read_type, prefix=prefix)
-      
+
+    num_workers = min([os.cpu_count(), batch_size if batch_size > 1 else 0, hypers['workers']])
+    dataloader = InfiniteDataLoader(dataset,
+                                    batch_size=batch_size,
+                                    shuffle=is_train,
+                                    num_workers=num_workers,
+                                    drop_last=False,
+                                    pin_memory=True,
+                                    collate_fn=LoadImageAndLabels.collate_fn if is_train
+                                    else LoadImageAndLabels.collate_fn_test)
+
+    return dataloader, dataset
