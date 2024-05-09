@@ -10,5 +10,7 @@ def build_model(cfg):
 
     if cfg['type'] in ['RTLSTD']:
         return models.__dict__[cfg['type']](**param)
-    elif cfg in ['ResNet']:
+    elif cfg['type'] in ['ResNet']:
         return models.backbone.__dict__[cfg['type']](**param)
+    else:
+        raise KeyError
