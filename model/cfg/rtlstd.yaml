@@ -1,1 +1,11 @@
-
+model:
+  type: 'RTLSTD'
+  patch_size: 128
+  backbone:
+    type: 'ResNet'
+    config:
+      input_dimension: 3
+      structure:
+        [[-1, 1, Conv, [64, 3, 2, 1, 1, False, True, 'ReLU-inplace']],
+          ]
+          
