@@ -37,4 +37,26 @@ def parse_module(module_cfg, module_name='Orange'):
                 submodule_args[j] = eval(arg) if isinstance(arg, str) else arg
             except Exception as e:
                 logger.error(e)
-                
+
+        if submodule in [Conv]:
+            in_channels, out_channels = out_channel_list[submodule_from], submodule_args[0]
+            submodule_args = [in_channels, *submodule_args]
+        else:
+            out_channels = out_channel_list[submodule_from]
+
+        submodule_ = nn.Sequential(*[submodule(*submodule_args) for _ in range(submodule_number)]) \
+            if submodule_number > 1 else submodule(*submodule_args)
+        submodule_type = str(submodule)[8:-2].replace('__main__', '')
+        num_params = sum(x.numel() for x in submodule_.parameters())
+        submodule_.module_index, submodule_.module_from, submodule_.module_type, submodule_.num_params = \
+            i, submodule_from, submodule_type, num_params
+        logger.info('{0:^10}{1:^20}{2:^15}{3:^30}{4:^80}{5:^15}'.format(
+            i + 1, str(submodule_from), submodule_number, submodule_type, str(submodule_args), num_params))
+        submodules.append(submodule_)
+
+        if i == 0:
+            out_channel_list = []
+        out_channel_list.append(out_channels)
+
+    return nn.Sequential(*submodules)
+    
