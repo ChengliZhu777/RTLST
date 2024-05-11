@@ -6,6 +6,8 @@ model:
     config:
       input_dimension: 3
       structure:
-        [[-1, 1, Conv, [64, 3, 2, 1, 1, False, True, 'ReLU-inplace']],
-          ]
+        [[-1, 1, Conv, [64, 3, 2, 1, 1, False, True, 'nn.ReLU(inplace=True)']],
+         [-1, 1, Conv, [64, 3, 1, 1, 1, False, True, 'nn.ReLU(inplace=True)']],
+         [-1, 1, Conv, [128, 3, 1, 1, 1, False, True, 'nn.ReLU(inplace=True)']],
+         [-1, 1, MaxPool, [3, 2, 1]],]
           
