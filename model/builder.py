@@ -3,7 +3,7 @@ import torch.nn as nn
 
 import models
 from utils.general import colorstr
-from .common import Conv
+from .common import Conv, MaxPool, ResBasicBlock
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +19,8 @@ def build_model(cfg):
         return models.__dict__[cfg['type']](**param)
     elif cfg['type'] in ['ResNet']:
         return models.backbone.__dict__[cfg['type']](**param)
+    elif cfg['type'] in ['PatchRPN']:
+        return models.region_proposal.__dict__[cfg['type']](**param)
     else:
         raise KeyError
 
@@ -38,11 +40,13 @@ def parse_module(module_cfg, module_name='Orange'):
             except Exception as e:
                 logger.error(e)
 
-        if submodule in [Conv]:
+        if submodule in [Conv, ResBasicBlock]:
             in_channels, out_channels = out_channel_list[submodule_from], submodule_args[0]
             submodule_args = [in_channels, *submodule_args]
-        else:
+        elif submodule in [MaxPool]:
             out_channels = out_channel_list[submodule_from]
+        else:
+            raise ValueError
 
         submodule_ = nn.Sequential(*[submodule(*submodule_args) for _ in range(submodule_number)]) \
             if submodule_number > 1 else submodule(*submodule_args)
