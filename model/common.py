@@ -58,3 +58,22 @@ class ResBasicBlock(nn.Module):
         out += residual
         return self.act(out)
         
+
+class AdaptiveAvgPool(nn.Module):
+    def __init__(self, pool_size):
+        super(AdaptiveAvgPool, self).__init__()
+        self.pool = nn.AdaptiveAvgPool2d(output_size=pool_size)
+
+    def forward(self, x):
+        return self.pool(x)
+
+
+class LinearLayer(nn.Module):
+    def __init__(self, in_features, out_features):
+        super(LinearLayer, self).__init__()
+        self.layer = nn.Linear(in_features, out_features)
+
+    def forward(self, x):
+        x = self.layer(x.view(x.size(0), -1)) if len(x.shape) > 2 else self.layer(x)
+        return x
+        
