@@ -79,6 +79,26 @@ def train(opts, evolved_hypers=None):
                                                         read_type=read_type,
                                                         prefix=colorstr('valid-dataset'))
 
+    model = build_model(model_cfg['model'])
+    if device.type == 'cuda':
+        model = nn.DataParallel(model, device_ids=[int(_) for _ in hypers['device']])
+
+    parameter_groups = {'decay': {'params': [], 'weight_decay': hypers['weight_decay']},
+                        'no_decay': {'params': [], 'weight_decay': 0}}
+    for k, v in model.named_parameters():
+        if not v.requires_grad:
+            continue
+        group_name = 'no_decay' if len(v.shape) == 1 or k.endswith('.bias') else 'decay'
+        parameter_groups[group_name]['params'].append(v)
+    parameter_groups = list(parameter_groups.values())
+
+    optimizer = optim.AdamW(parameter_groups, lr=hypers['learning_rate'])
+
+    num_epoch_iter = len(train_dataloader)
+    num_train_iter, num_warmup_iter = epochs * num_epoch_iter, hypers['warmup_epochs'] * num_epoch_iter
+    lr_scheduler = create_lr_scheduler(optimizer, num_warmup_iter, num_train_iter,
+                                       hypers['warmup_factor'], hypers['end_factor'])
+    
 
 if __name__ == '__main__':
     set_logging(-1)
