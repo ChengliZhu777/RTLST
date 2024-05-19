@@ -205,6 +205,29 @@ class LoadImageAndLabels(Dataset):
 
         return bboxes, words, gt_words, word_mask
 
+    def load_image(self, index):
+        image_path = self.image_files[index]
+        try:
+            if self.read_type == 'cv2':
+                image = cv2.imread(image_path)
+                image = image[:, :, [2, 1, 0]]  # ::-1
+            elif self.read_type == 'pil':
+                image = Image.open(image_path)
+                image = np.array(image)
+            else:
+                raise KeyError(f'Error: unsupported image read type ({self.read_type}).')
+        except Exception as e:
+            raise Exception(f'Error: fail to load image, {e}.')
+
+        return image
+        
+    def __len__(self):
+        return len(self.image_files)
+
+    def __getitem__(self, index):
+        image, image_name = self.load_image(index), Path(self.image_files[index]).stem
+        bboxes, bboxes_poly, words = self.bboxes[index], [], self.words[index]
+        
 
 def create_dataloader(paths, hypers, long_size, short_size, patch_size, batch_size,
                       is_train=False, is_augment=False, is_recognize=False, is_visible=False,
