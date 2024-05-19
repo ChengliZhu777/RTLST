@@ -104,7 +104,37 @@ def train(opts, evolved_hypers=None):
     num_train_iter, num_warmup_iter = epochs * num_epoch_iter, hypers['warmup_epochs'] * num_epoch_iter
     lr_scheduler = create_lr_scheduler(optimizer, num_warmup_iter, num_train_iter,
                                        hypers['warmup_factor'], hypers['end_factor'])
-    
+
+    logger.info(colorstr('Start training from scratch ...'))
+    rpn_p, rpn_r, rpn_f1, best_rpn_p, best_rpn_p, best_rpn_f1 = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+    det_p, det_r, det_f1, best_det_p, best_det_p, best_det_f1 = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+
+    info_str, memory_usage = '{0:^11}{1:^12}{2:^15}{3:^20}{4:^26}'.format(
+        'Epoch', 'GPU Memory', 'LearningRate', 'loss PRPN/Det', 'PRPN Precis/Recall/F_score'), None
+    logger.info(info_str)
+    results_writer.write(info_str + '\n')
+    torch.save(model, weight_dir / 'init.pt')
+
+    for epoch in range(epochs):
+        model.train()
+        optimizer.zero_grad()
+        mean_loss = torch.zeros(1).to(device)
+
+        is_det = False if epoch < 20 else True
+        pbar = tqdm(enumerate(train_dataloader), total=num_epoch_iter, ncols=150)
+        for iter_index, (batch_bboxes, batch_words, batch_images, org_images, patch_images, patch_labels,
+                         image_names, num_pos_patches, num_patch_images) in pbar:
+            
+            patch_images, patch_labels = patch_images.to(device), patch_labels.to(device)
+            results = model(patch_images, patch_labels, batch_images, batch_bboxes, batch_words, image_names,
+                            num_pos_patches, hypers, is_det)
+
+            prpn_loss = results['prpn']['loss']
+            prpn_loss.backward()
+            optimizer.step()
+            optimizer.zero_grad()
+            lr_scheduler.step()
+                             
 
 if __name__ == '__main__':
     set_logging(-1)
