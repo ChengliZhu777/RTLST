@@ -1,4 +1,7 @@
+import os
 import string
+
+from PIL import ExifTags
 
 
 def get_chars(latin_type, eos='EOS', padding='PAD', unknown='UNK'):
@@ -36,3 +39,22 @@ def get_exif_size(image_size, image_exif):
 
     return image_size
 
+
+def get_hash(files):
+    return sum(os.path.getsize(file) for file in files if os.path.isfile(file))
+
+
+def random_scale(image, image_size, scale_range, aspect_range, short_size=768, patch_size=128):
+
+    scale = (np.random.choice(scale_range) * short_size) / min(image_size)
+    aspect = math.sqrt(np.random.choice(aspect_range))
+    w_scale, h_scale = scale / aspect, scale * aspect
+
+    return scale_image(image, image_size, (w_scale, h_scale), patch_size)
+
+
+def scale_image(image, image_size, scale_size, patch_size=128):
+    width, height = math.ceil(int(image_size[0] * scale_size[0] + 0.5) / patch_size) * patch_size, \
+                    math.ceil(int(image_size[1] * scale_size[1] + 0.5) / patch_size) * patch_size
+
+    return cv2.resize(image, dsize=(width, height))
