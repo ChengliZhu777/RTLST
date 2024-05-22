@@ -1,4 +1,6 @@
 import os
+import cv2
+import math
 import string
 
 from PIL import ExifTags
