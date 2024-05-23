@@ -60,3 +60,13 @@ def scale_image(image, image_size, scale_size, patch_size=128):
                     math.ceil(int(image_size[1] * scale_size[1] + 0.5) / patch_size) * patch_size
 
     return cv2.resize(image, dsize=(width, height))
+
+
+def horizontal_flip(images, bboxes, image_width):
+
+    for i in range(len(images)):
+        images[i] = np.flip(images[i], axis=1).copy()
+
+    bboxes[:, :, 0] = image_width - bboxes[:, :, 0] - 1
+
+    return images, bboxes[:, [1, 0, 3, 2]]
