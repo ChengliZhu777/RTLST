@@ -208,14 +208,8 @@ class LoadImageAndLabels(Dataset):
     def load_image(self, index):
         image_path = self.image_files[index]
         try:
-            if self.read_type == 'cv2':
-                image = cv2.imread(image_path)
-                image = image[:, :, [2, 1, 0]]  # ::-1
-            elif self.read_type == 'pil':
-                image = Image.open(image_path)
-                image = np.array(image)
-            else:
-                raise KeyError(f'Error: unsupported image read type ({self.read_type}).')
+            image = cv2.imread(image_path)
+            image = image[:, :, ::-1]
         except Exception as e:
             raise Exception(f'Error: fail to load image, {e}.')
 
@@ -227,7 +221,31 @@ class LoadImageAndLabels(Dataset):
     def __getitem__(self, index):
         image, image_name = self.load_image(index), Path(self.image_files[index]).stem
         bboxes, bboxes_poly, words = self.bboxes[index], [], self.words[index]
-        
+
+        num_bboxes, image_size = bboxes.shape[0], self.image_sizes[index]
+        if self.is_augment:
+            image = random_scale(image, image_size, self.random_scale_ratio, self.random_scale_aspect,
+                                 short_size=self.short_size, patch_size=self.patch_size)
+        else:
+            if self.long_size == 0:
+                scale = float(self.short_size) / min(image_size)
+                image = scale_image(image, image_size, (scale, scale), self.patch_size)
+            else:
+                if image_size[0] > image_size[1]:
+                    resize_width, resize_height = self.long_size, self.short_size
+                else:
+                    resize_width, resize_height = self.short_size, self.long_size
+                image = cv2.resize(image, dsize=(resize_width, resize_height))
+
+        image_height, image_width = image.shape[0:2]
+        rest_bbox_area_percent = np.ones((num_bboxes, ), dtype=float)
+
+        gt_instance = np.zeros((image_height, image_width), dtype='uint8')
+        if num_bboxes > 0:
+            bboxes = np.reshape(bboxes * ([image_width, image_height] * 4),
+                                (num_bboxes, -1, 2)).astype('int32')
+            cv2.drawContours(image=gt_instance, contours=bboxes, contourIdx=-1,
+                             color=255, thickness=-1)
 
 def create_dataloader(paths, hypers, long_size, short_size, patch_size, batch_size,
                       is_train=False, is_augment=False, is_recognize=False, is_visible=False,
