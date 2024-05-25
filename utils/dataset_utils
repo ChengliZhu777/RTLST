@@ -70,3 +70,54 @@ def horizontal_flip(images, bboxes, image_width):
     bboxes[:, :, 0] = image_width - bboxes[:, :, 0] - 1
 
     return images, bboxes[:, [1, 0, 3, 2]]
+
+
+def bboxes_rotate(bboxes, rotate_matrix):
+    rotated_bboxes = []
+    rotate_params = np.transpose(rotate_matrix[:, :2])
+    translation_params = np.reshape(rotate_matrix[:, 2:], newshape=(1, 2))
+    for i in range(len(bboxes)):
+        rotated_bboxes.append(np.dot(bboxes[i], rotate_params) + translation_params)
+
+    return rotated_bboxes
+
+
+def random_rotate(images, bboxes, image_height, image_width, max_angle=10):
+    angle = (random.random() * 2 - 1) * max_angle
+    rotate_matrix = cv2.getRotationMatrix2D((image_width / 2, image_height / 2), angle, 1.0)
+    for i in range(len(images)):
+        images[i] = cv2.warpAffine(images[i], rotate_matrix, dsize=(image_width, image_height),
+                                   flags=cv2.INTER_NEAREST)
+    bboxes = bboxes_rotate(bboxes, rotate_matrix)
+    return images, bboxes
+
+
+def remove_invalid_bboxes(bboxes, words, bbox_area_percent, image_width, image_height, min_area_thresh=0.15):
+    reserved_bboxes, reserved_words, reserved_bbox_area_percent = [], [], []
+
+    for i in range(len(bboxes)):
+        if np.all(bboxes[i] > 0) and np.all(bboxes[i][:, 0] < image_width - 1) and \
+                np.all(bboxes[i][:, 1] < image_height - 1):
+
+            reserved_bboxes.append(np.around(bboxes[i]).astype(int))
+            reserved_words.append(words[i])
+            reserved_bbox_area_percent.append(bbox_area_percent[i])
+        else:
+            image_poly, bbox_poly = Polygon([[0, 0], [image_width, 0], [image_width, image_height],
+                                             [0, image_height]]), Polygon(bboxes[i])
+            intersection = image_poly.intersection(bbox_poly)
+
+            if not intersection.is_empty:
+                if intersection.area > bbox_poly.area / bbox_area_percent[i] * min_area_thresh:
+                    inter_bboxes_coors = np.array(intersection.exterior.coords) \
+                        if isinstance(intersection, Polygon) else []
+
+                    inter_bbox = inter_bboxes_coors[:-1, ]
+                    inter_bbox[:, 0], inter_bbox[:, 1] = np.clip(inter_bbox[:, 0], 0, image_width - 1), \
+                        np.clip(inter_bbox[:, 1], 0, image_height - 1)
+
+                    reserved_bboxes.append(inter_bbox)
+                    reserved_bbox_area_percent.append(bbox_area_percent[i] * (Polygon(inter_bbox).area / bbox_poly.area))
+                    reserved_words.append(words[i])
+
+    return reserved_bboxes, reserved_words, reserved_bbox_area_percent
