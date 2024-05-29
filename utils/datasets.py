@@ -247,6 +247,36 @@ class LoadImageAndLabels(Dataset):
             cv2.drawContours(image=gt_instance, contours=bboxes, contourIdx=-1,
                              color=255, thickness=-1)
 
+        if self.is_augment:
+            images = [image, gt_instance]
+            if not self.is_recognize and random.random() < 0.5:
+                images, bboxes = horizontal_flip(images, bboxes, image_width)
+            images, bboxes = random_rotate(images, bboxes, image_height, image_width,
+                                           max_angle=self.random_rotate_angle)
+            bboxes, words, rest_bbox_area_percent = remove_invalid_bboxes(bboxes, words, rest_bbox_area_percent,
+                                                                          image_width, image_height, self.patch_thresh)
+            if image_height != self.short_size or image_width != self.short_size:
+                images, bboxes = random_crop_padding(images, bboxes, image_height, image_width,
+                                                     target_size=self.short_size)
+                bboxes, words, rest_bbox_area_percent = remove_invalid_bboxes(bboxes, words, rest_bbox_area_percent,
+                                                                              self.short_size, self.short_size)
+            image, gt_instance = images[0], images[1]
+            image_height, image_width = image.shape[0:2]
+
+        num_bboxes = len(bboxes)
+        for i in range(num_bboxes):
+            bboxes[i] = np.around(bboxes[i]).astype(int)
+            bboxes[i][:, 0], bboxes[i][:, 1] = \
+                np.clip(bboxes[i][:, 0], 0, image_width - 1), np.clip(bboxes[i][:, 1], 0, image_height - 1)
+            bboxes_poly.append(Polygon(bboxes[i].reshape(-1, 2)))
+
+        rgb_image = Image.fromarray(image).convert('RGB')
+        if self.is_augment:
+            rgb_image = transforms.ColorJitter(brightness=32.0 / 255, saturation=0.5)(rgb_image)
+        rgb_image = transforms.ToTensor()(rgb_image)
+        rgb_image = transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                         std=[0.229, 0.224, 0.225])(rgb_image)
+        
 def create_dataloader(paths, hypers, long_size, short_size, patch_size, batch_size,
                       is_train=False, is_augment=False, is_recognize=False, is_visible=False,
                       rank=-1, read_type='pil', prefix='Dataset'):
